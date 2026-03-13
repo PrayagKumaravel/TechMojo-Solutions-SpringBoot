@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import com.example.demo.DTO.ResponseDto;
 import com.example.demo.DTO.SectionDto;
+import com.example.demo.Exception.InputAlreadyExist;
+import com.example.demo.Exception.InputDoesntExist;
 import com.example.demo.Model.SectionModel;
 import com.example.demo.Repository.SectionRepository;
 
@@ -38,10 +40,12 @@ public class SectionService {
     }
 
     public ResponseDto getSectionById(Long id){
-        SectionModel sectionModel=sectionRepository.findById(id)
-        .orElseThrow(()-> new RuntimeException("Bro!! I dont have that section id"));
+        Optional<SectionModel> sectionModel=sectionRepository.findById(id);
+        if(sectionModel.isEmpty()){
+            throw new InputDoesntExist("Section with this id doesn't exist");
+        }
         //responsedto stores List<SectionDto> , so convert ectionmodle to sectiondto and add it to list
-        SectionDto sectionDto=SectionDto.builder().name(sectionModel.getName()).build();;
+        SectionDto sectionDto=SectionDto.builder().name(sectionModel.get().getName()).build();;
         List<SectionDto> sectionDtos=new ArrayList<>();
         sectionDtos.add(sectionDto);
         ResponseDto response=new ResponseDto();
@@ -51,9 +55,9 @@ public class SectionService {
     public ResponseDto createSection(SectionDto data){
         //checking whether than section name exist
         Optional<SectionModel>checker=sectionRepository.findByName(data.getName());
-        //since already present retun -1;
+        //since already present retun
         if(checker.isPresent()){
-            return ResponseDto.builder().status(500).message("Section already exist with name "+data.getName()).build();
+            throw new InputAlreadyExist("Section with this name already exist!! ");
         }
         //dto -> entity
         SectionModel sectionModel=new SectionModel();
@@ -70,7 +74,8 @@ public class SectionService {
     public ResponseDto updateSectionNameById(SectionDto data){
         Optional<SectionModel> sectionModelchecker=sectionRepository.findById(data.getId());
         if(sectionModelchecker.isEmpty()){
-            return ResponseDto.builder().status(500).message("Section doesn't exist with Id "+data.getId()).build();
+            //return ResponseDto.builder().status(500).message("Section doesn't exist with Id "+data.getId()).build();
+            throw new InputDoesntExist("Section with this id doesn't exist!!");
         }
         SectionModel sectionModel=sectionModelchecker.get();
         sectionModel.setName(data.getName());
